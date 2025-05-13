@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# sp2dash - 自然文をスラグ形式に変換するツール
+
+# ヘルプメッセージを表示する関数
+show_help() {
+  cat << EOF
+sp2dash - 自然文をスラグ形式に変換するツール
+
+使用方法:
+  sp2dash [オプション] <文字列>
+  echo <文字列> | sp2dash
+
+オプション:
+  -h, --help    このヘルプメッセージを表示
+
+例:
+  sp2dash "Your Title Here"     # => Your-Title-Here
+  sp2dash "Your Title: Here"    # => Your-Title_Here
+EOF
+  exit 0
+}
+
+# 引数がない場合またはヘルプオプションが指定された場合はヘルプを表示
+if [[ $# -eq 0 && -t 0 ]] || [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+fi
+
+# 入力文字列の取得（引数またはパイプから）
+if [[ -t 0 ]]; then
+  # 引数から入力を取得
+  input="$@"
+else
+  # パイプから入力を取得
+  input=$(cat)
+fi
+
+# 入力が空の場合はエラーメッセージを表示
+if [[ -z "$input" ]]; then
+  echo "エラー: 入力文字列が空です" >&2
+  exit 1
+fi
+
+# 変換処理
+convert_slug() {
+  local text="$1"
+  
+  # 1. コロン(:)、セミコロン(;)、クエスチョンマーク(?) → アンダースコア(_)に変換
+  text=$(echo "$text" | sed 's/[:;?]/_/g')
+  
+  # 2. カンマ(,)、ピリオド(.)、エクスクラメーションマーク(!) → 削除
+  text=$(echo "$text" | sed 's/[,.!]//g')
+  
+  # 3. スペース → ハイフン(-)に変換
+  text=$(echo "$text" | sed 's/ /-/g')
+  
+  # 4. 連続するハイフンやアンダースコアを単一に置換
+  text=$(echo "$text" | sed 's/-\+/-/g' | sed 's/_\+/_/g')
+  
+  echo "$text"
+}
+
+# 変換実行と結果出力
+result=$(convert_slug "$input")
+echo "$result"
